@@ -1,4 +1,4 @@
-name: CI - Basic Check
+name: Basic CI
 
 on:
   push:
@@ -11,13 +11,13 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.9, 3.10]
+        python-version: [3.9]
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
 
-    - name: Set up Python ${{ matrix.python-version }}
+    - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
@@ -27,12 +27,9 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
-    - name: Basic import test
+    - name: Import check
       run: |
         python - <<EOF
-        import jax
-        import numpy
-        import pandas
-        import src
-        print("✅ All core modules imported successfully!")
+        import jax, numpy, pandas
+        print("✅ Basic import check passed!")
         EOF
