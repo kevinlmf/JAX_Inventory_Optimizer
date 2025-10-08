@@ -1,6 +1,6 @@
 # JAX Inventory Optimizer  
 
-A **high-performance inventory optimization system powered by JAX**, unifying **traditional methods**, **machine learning**, and **reinforcement learning** under a single stochastic control framework for retail e-commerce.  
+A **high-performance inventory optimization system powered by JAX**, unifying **traditional methods** and **machine learning** under a single stochastic control framework for retail e-commerce.  
 
 ## Overview  
 
