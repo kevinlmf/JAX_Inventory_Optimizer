@@ -45,9 +45,10 @@ We might divide the machine learning system lifecycle into **five key stages** �
 | **5️⃣ Monitoring & Maintenance (MLOps)** | Automate retraining, monitor drift, and manage versions | `Kubernetes`, `Prometheus`, `CI/CD` |
 
 ---
- **Steps 1–3:** Make the model *run*  
- **Step 4:** Make the model *usable in production*  
- **Step 5 (MLOps):** Make the model *sustain itself and evolve continuously*
+**steps 1–3:** make the model *run*  
+**step 4:** make the model *usable in production*  
+**step 5 (mlops):** make the model *sustain itself and evolve continuously*
+
 ---
 
 ## Quick Start
