@@ -145,7 +145,7 @@ python examples/04_api_client.py
 
 ## Learning Path
 
-### Beginner (Start here!)
+### Beginn (Start here!)
 1. **01_basic_usage.py** - Understand core concepts
 2. **04_api_client.py** - Learn API integration
 
