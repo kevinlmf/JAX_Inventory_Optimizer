@@ -28,38 +28,23 @@ JAX Inventory Optimizer addresses the fundamental challenge in supply chain mana
 - **Dynamic Inventory Optimization**: Strategy-based (Aggressive/Balanced/Conservative)
 - **Deadstock Detection**: Multi-dimensional risk assessment
 - **Cash Flow Prediction**: Monte Carlo simulation with confidence intervals
-- **Portfolio Optimization**: Budget constraints and capital allocation
-- **Auto Decision Engine**: Automated inventory management with risk controls
 
-### Production-Ready
-- **FastAPI REST Service**  
-  Exposes real-time endpoints for **inventory forecasting**, **reorder recommendations**, and **policy evaluation**.  
-  The service layer is fully asynchronous and supports **batch inference** via JAX-compiled models, enabling **sub-10 ms latency** per request under GPU acceleration.
 
-- **Docker & Kubernetes Deployment**  
-  All components (API, training workers, data pipeline) are fully **containerized** with reproducible builds.  
-  Kubernetes manifests and Helm charts provide **scalable**, **fault-tolerant**, and **auto-healing** deployments across environments (local, staging, and cloud).  
-  The system supports **rolling updates**, **horizontal pod autoscaling**, and integrates **Prometheus + Grafana** for end-to-end observability.
-
-- **MLOps Integration**  
-  Integrated with **Weights & Biases (W&B)** for unified **experiment tracking**, **hyperparameter logging**, and **model performance visualization**.  
-  Automatically syncs metrics, configurations, and artifacts, ensuring **reproducible training pipelines** and seamless **CI/CD** compatibility (e.g., GitHub Actions, Vertex AI).
-
----
 ##  From Research to Production: The End-to-End ML Lifecycle
 
-We can divide the machine learning system lifecycle into **five key stages** :
+##  Machine Learning System Lifecycle
 
-| Stage | Main Objective | Responsible Role | Tools / Frameworks |
-|:------:|----------------|------------------|--------------------|
-| **1️⃣ Data Preparation (Data)** | Collect, clean, and label data | Data Engineer | `pandas`, `Airflow`, `SQL` |
-| **2️⃣ Model Training (Modeling)** | Build, tune, and validate models | Researcher / Data Scientist | `PyTorch`, `JAX`, `sklearn` |
-| **3️⃣ Evaluation & Optimization (Evaluation)** | Compare experiments and select the best model | ML Engineer | `Weights & Biases (W&B)`, `MLflow` |
-| **4️⃣ Deployment (Deployment)** | Package the model into a scalable API service | DevOps Engineer | `Docker`, `FastAPI` |
-| **5️⃣ Monitoring & Maintenance (MLOps)** | Automate retraining, monitor drift, and manage versions | MLOps Engineer | `Kubernetes`, `Prometheus`, `CI/CD` |
+We might divide the machine learning system lifecycle into **five key stages** — from data collection to intelligent deployment and continuous improvement.
+
+| Stage | Main Objective | Tools / Frameworks |
+|:------:|----------------|--------------------|
+| **1️⃣ Data Preparation (Data)** | Collect, clean, and label data | `pandas`, `Airflow`, `SQL` |
+| **2️⃣ Model Training (Modeling)** | Build, tune, and validate models | `PyTorch`, `JAX`, `sklearn` |
+| **3️⃣ Evaluation & Optimization (Evaluation)** | Compare experiments and select the best model | `Weights & Biases (W&B)`, `MLflow` |
+| **4️⃣ Deployment (Deployment)** | Package the model into a scalable API service | `Docker`, `FastAPI` |
+| **5️⃣ Monitoring & Maintenance (MLOps)** | Automate retraining, monitor drift, and manage versions | `Kubernetes`, `Prometheus`, `CI/CD` |
 
 ---
-
  **Steps 1–3:** Make the model *run*  
  **Step 4:** Make the model *usable in production*  
  **Step 5 (MLOps):** Make the model *sustain itself and evolve continuously*
@@ -247,6 +232,11 @@ forecast = predictor.predict_cashflow(
     forecast_horizon=90
 )
 ```
+---
+<div align="center">
+I wish I could drink less coffee and sleep better. ☕💤
+
+</div>
 
 
 
