@@ -1,0 +1,142 @@
+# Default values for jax-inventory
+# This is a YAML-formatted file.
+
+replicaCount: 3
+
+image:
+  repository: jax-inventory
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext:
+  fsGroup: 1000
+
+securityContext:
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: false
+  runAsNonRoot: true
+  runAsUser: 1000
+
+service:
+  type: LoadBalancer
+  port: 80
+  targetPort: 8000
+  annotations: {}
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+  hosts:
+    - host: api.jax-inventory.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: jax-inventory-tls
+      hosts:
+        - api.jax-inventory.example.com
+
+resources:
+  requests:
+    memory: "4Gi"
+    cpu: "2000m"
+    nvidia.com/gpu: "1"
+  limits:
+    memory: "8Gi"
+    cpu: "4000m"
+    nvidia.com/gpu: "1"
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 20
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+  targetGPUUtilizationPercentage: 75
+
+nodeSelector:
+  nvidia.com/gpu.present: "true"
+
+tolerations:
+  - key: nvidia.com/gpu
+    operator: Exists
+    effect: NoSchedule
+
+affinity: {}
+
+# Persistence
+persistence:
+  data:
+    enabled: true
+    storageClass: "fast-ssd"
+    accessMode: ReadOnlyMany
+    size: 100Gi
+  results:
+    enabled: true
+    storageClass: "fast-ssd"
+    accessMode: ReadWriteMany
+    size: 500Gi
+
+# Environment variables
+env:
+  JAX_PLATFORM_NAME: "gpu"
+  XLA_PYTHON_CLIENT_PREALLOCATE: "false"
+  LOG_LEVEL: "INFO"
+
+# Secrets (use external secret manager in production)
+secrets:
+  wandbApiKey: ""
+
+# Config
+config:
+  model:
+    hidden_size: 256
+    num_layers: 4
+    dropout: 0.1
+  training:
+    batch_size: 128
+    learning_rate: 0.001
+    num_epochs: 100
+  distributed:
+    strategy: "auto"
+    num_devices: 4
+
+# Monitoring
+monitoring:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+
+# Training job
+trainer:
+  enabled: true
+  replicas: 1
+  resources:
+    requests:
+      memory: "16Gi"
+      cpu: "8000m"
+      nvidia.com/gpu: "4"
+    limits:
+      memory: "32Gi"
+      cpu: "16000m"
+      nvidia.com/gpu: "4"
+  nodeSelector:
+    gpu-count: "4"

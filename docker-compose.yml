@@ -1,0 +1,124 @@
+version: '3.8'
+
+services:
+  # API Service with GPU
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.gpu
+      target: runtime
+    container_name: jax-inventory-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data:ro
+      - ./results:/app/results:rw
+      - ./logs:/app/logs:rw
+    environment:
+      - JAX_PLATFORM_NAME=gpu
+      - CUDA_VISIBLE_DEVICES=0
+      - XLA_PYTHON_CLIENT_PREALLOCATE=false
+      - LOG_LEVEL=INFO
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Training Service with Multi-GPU
+  trainer:
+    build:
+      context: .
+      dockerfile: Dockerfile.gpu
+      target: runtime
+    container_name: jax-inventory-trainer
+    command: python experiments/distributed_training.py
+    volumes:
+      - ./data:/app/data:ro
+      - ./results:/app/results:rw
+      - ./logs:/app/logs:rw
+      - ./configs:/app/configs:ro
+    environment:
+      - JAX_PLATFORM_NAME=gpu
+      - CUDA_VISIBLE_DEVICES=0,1
+      - XLA_PYTHON_CLIENT_PREALLOCATE=false
+      - WANDB_API_KEY=${WANDB_API_KEY}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: on-failure
+
+  # Development Jupyter Lab
+  jupyter:
+    build:
+      context: .
+      dockerfile: Dockerfile.gpu
+      target: development
+    container_name: jax-inventory-jupyter
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./:/app:rw
+      - ./notebooks:/app/notebooks:rw
+    environment:
+      - JAX_PLATFORM_NAME=gpu
+      - CUDA_VISIBLE_DEVICES=0
+      - JUPYTER_ENABLE_LAB=yes
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+
+  # Monitoring - Prometheus (optional)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: jax-inventory-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    restart: unless-stopped
+
+  # Monitoring - Grafana (optional)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: jax-inventory-grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+
+volumes:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  default:
+    name: jax-inventory-network

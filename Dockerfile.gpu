@@ -1,0 +1,128 @@
+# Production-Grade Multi-Stage Dockerfile for JAX Inventory Optimizer with GPU Support
+# Optimized for minimal image size and maximum performance
+
+# ============================================================================
+# Stage 1: Base Builder - Install dependencies
+# ============================================================================
+FROM nvidia/cuda:12.3.0-cudnn9-devel-ubuntu22.04 AS builder
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# Install Python and build dependencies
+RUN apt-get update && apt-get install -y \
+    python3.10 \
+    python3.10-dev \
+    python3-pip \
+    git \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Upgrade pip
+RUN python3.10 -m pip install --upgrade pip setuptools wheel
+
+# Create virtual environment
+RUN python3.10 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Copy requirements
+WORKDIR /tmp
+COPY requirements.txt requirements-prod.txt ./
+
+# Install Python dependencies with GPU support
+RUN pip install \
+    "jax[cuda12_pip]==0.4.23" \
+    -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+
+# Install other requirements
+RUN pip install -r requirements.txt -r requirements-prod.txt
+
+# ============================================================================
+# Stage 2: Runtime Image
+# ============================================================================
+FROM nvidia/cuda:12.3.0-cudnn9-runtime-ubuntu22.04 AS runtime
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    JAX_PLATFORM_NAME=gpu \
+    XLA_PYTHON_CLIENT_PREALLOCATE=false \
+    XLA_PYTHON_CLIENT_ALLOCATOR=platform \
+    TF_CPP_MIN_LOG_LEVEL=2
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    python3.10 \
+    python3.10-venv \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user for security
+RUN useradd -m -u 1000 -s /bin/bash appuser
+
+# Copy virtual environment from builder
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Set working directory
+WORKDIR /app
+
+# Copy application code with correct ownership
+COPY --chown=appuser:appuser . .
+
+# Create directories for data and results
+RUN mkdir -p /app/data /app/results /app/logs && \
+    chown -R appuser:appuser /app
+
+# Switch to non-root user
+USER appuser
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD python3 -c "import jax; print(jax.devices())" || exit 1
+
+# Expose ports
+EXPOSE 8000 8080
+
+# Default command - API server
+CMD ["uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+
+# ============================================================================
+# Stage 3: Development Image (optional)
+# ============================================================================
+FROM runtime AS development
+
+USER root
+
+# Install development tools
+RUN apt-get update && apt-get install -y \
+    vim \
+    curl \
+    wget \
+    git \
+    htop \
+    tmux \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install development Python packages
+RUN pip install \
+    jupyter \
+    jupyterlab \
+    ipython \
+    black \
+    flake8 \
+    pytest \
+    pytest-cov \
+    debugpy
+
+USER appuser
+
+# Jupyter Lab port
+EXPOSE 8888
+
+CMD ["jupyter", "lab", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--allow-root"]

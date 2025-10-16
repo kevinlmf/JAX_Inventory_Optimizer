@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jax-inventory-config
+  labels:
+    app: jax-inventory
+data:
+  training_config.yaml: |
+    model:
+      hidden_size: 256
+      num_layers: 4
+      dropout: 0.1
+
+    training:
+      batch_size: 128
+      learning_rate: 0.001
+      num_epochs: 100
+      warmup_steps: 1000
+
+    distributed:
+      strategy: "auto"
+      num_devices: 4
+      data_parallel_size: 2
+      model_parallel_size: 2
+
+    optimization:
+      use_jit: true
+      use_mixed_precision: true
+      gradient_accumulation_steps: 4
+
+  api_config.yaml: |
+    server:
+      host: "0.0.0.0"
+      port: 8000
+      workers: 4
+      reload: false
+
+    logging:
+      level: "INFO"
+      format: "json"
+
+    model:
+      checkpoint_path: "/app/results/checkpoints"
+      inference_batch_size: 32
+      max_sequence_length: 365
+
+  environment.env: |
+    JAX_PLATFORM_NAME=gpu
+    XLA_PYTHON_CLIENT_PREALLOCATE=false
+    XLA_PYTHON_CLIENT_ALLOCATOR=platform
+    TF_CPP_MIN_LOG_LEVEL=2
+    PYTHONUNBUFFERED=1

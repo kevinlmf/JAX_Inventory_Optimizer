@@ -1,0 +1,156 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jax-inventory-api
+  labels:
+    app: jax-inventory
+    component: api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: jax-inventory
+      component: api
+  template:
+    metadata:
+      labels:
+        app: jax-inventory
+        component: api
+    spec:
+      containers:
+      - name: api
+        image: jax-inventory:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8000
+          name: http
+        env:
+        - name: JAX_PLATFORM_NAME
+          value: "gpu"
+        - name: XLA_PYTHON_CLIENT_PREALLOCATE
+          value: "false"
+        - name: LOG_LEVEL
+          value: "INFO"
+        - name: WORKERS
+          value: "4"
+        resources:
+          requests:
+            memory: "4Gi"
+            cpu: "2000m"
+            nvidia.com/gpu: "1"
+          limits:
+            memory: "8Gi"
+            cpu: "4000m"
+            nvidia.com/gpu: "1"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8000
+          initialDelaySeconds: 15
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        volumeMounts:
+        - name: data
+          mountPath: /app/data
+          readOnly: true
+        - name: results
+          mountPath: /app/results
+        - name: config
+          mountPath: /app/configs
+          readOnly: true
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: jax-inventory-data-pvc
+      - name: results
+        persistentVolumeClaim:
+          claimName: jax-inventory-results-pvc
+      - name: config
+        configMap:
+          name: jax-inventory-config
+      nodeSelector:
+        nvidia.com/gpu.present: "true"
+      tolerations:
+      - key: nvidia.com/gpu
+        operator: Exists
+        effect: NoSchedule
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jax-inventory-trainer
+  labels:
+    app: jax-inventory
+    component: trainer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jax-inventory
+      component: trainer
+  template:
+    metadata:
+      labels:
+        app: jax-inventory
+        component: trainer
+    spec:
+      containers:
+      - name: trainer
+        image: jax-inventory:latest
+        imagePullPolicy: IfNotPresent
+        command: ["python", "experiments/distributed_training.py"]
+        env:
+        - name: JAX_PLATFORM_NAME
+          value: "gpu"
+        - name: XLA_PYTHON_CLIENT_PREALLOCATE
+          value: "false"
+        - name: WANDB_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: jax-inventory-secrets
+              key: wandb-api-key
+        resources:
+          requests:
+            memory: "16Gi"
+            cpu: "8000m"
+            nvidia.com/gpu: "4"
+          limits:
+            memory: "32Gi"
+            cpu: "16000m"
+            nvidia.com/gpu: "4"
+        volumeMounts:
+        - name: data
+          mountPath: /app/data
+          readOnly: true
+        - name: results
+          mountPath: /app/results
+        - name: config
+          mountPath: /app/configs
+          readOnly: true
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: jax-inventory-data-pvc
+      - name: results
+        persistentVolumeClaim:
+          claimName: jax-inventory-results-pvc
+      - name: config
+        configMap:
+          name: jax-inventory-config
+      nodeSelector:
+        nvidia.com/gpu.present: "true"
+        gpu-count: "4"
+      tolerations:
+      - key: nvidia.com/gpu
+        operator: Exists
+        effect: NoSchedule

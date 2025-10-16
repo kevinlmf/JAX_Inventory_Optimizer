@@ -1,0 +1,18 @@
+apiVersion: v2
+name: jax-inventory
+description: A Helm chart for JAX Inventory Optimizer with GPU support
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - jax
+  - machine-learning
+  - inventory-optimization
+  - gpu
+  - distributed-training
+maintainers:
+  - name: Kevin
+    email: your-email@example.com
+home: https://github.com/kevinlmf/JAX_Inventory_Optimizer
+sources:
+  - https://github.com/kevinlmf/JAX_Inventory_Optimizer

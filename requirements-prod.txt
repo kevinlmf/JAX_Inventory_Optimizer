@@ -1,0 +1,17 @@
+# Production requirements
+gunicorn>=21.2.0
+uvloop>=0.19.0
+httptools>=0.6.1
+
+# Monitoring and logging
+prometheus-client>=0.19.0
+python-json-logger>=2.0.7
+
+# Distributed computing
+ray[default]>=2.9.0
+
+# W&B for experiment tracking
+wandb>=0.16.2
+
+# Advanced optimizations
+triton>=2.1.0
